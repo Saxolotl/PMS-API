@@ -75,11 +75,6 @@ module.exports.Devices = this.db.define('Devices', {
     }
 })
 
-module.exports.init = async () => {
-    await this.Users.sync({force: true});
-    console.log("Updated Table");
-}
-
 module.exports.seed = async () => {
     this.Projects.hasMany(this.Deadlines);
     this.Projects.hasMany(this.Meetings);
