@@ -5,7 +5,7 @@ module.exports.db = new Sequelize({
     storage: './db.sqlite'
 });
 
-module.exports.Users = this.db.define('users', {
+module.exports.Users = this.db.define('Users', {
     email: {
         type: Sequelize.STRING,
         primaryKey: true
@@ -21,14 +21,19 @@ module.exports.Users = this.db.define('users', {
     }
 });
 
-module.exports.Projects = this.db.define('projects', {
+module.exports.Projects = this.db.define('Projects', {
     name: {
         type: Sequelize.STRING
     },
-    
+    description: {
+        type: Sequelize.STRING
+    },
+    budget: {
+        type: Sequelize.FLOAT
+    }
 });
 
-module.exports.Deadlines = this.db.define('deadlines', {
+module.exports.Deadlines = this.db.define('Deadlines', {
     date: {
         type: Sequelize.DATE
     },
@@ -37,10 +42,28 @@ module.exports.Deadlines = this.db.define('deadlines', {
     },
     description: {
         type: Sequelize.STRING
+    },
+    ProjectId: {
+        type: Sequelize.INTEGER
     }
-})
+});
 
-module.exports.Devices = this.db.define('devices', {
+module.exports.Meetings = this.db.define('Meetings', {
+    date: {
+        type: Sequelize.DATE
+    },
+    name : {
+        type: Sequelize.STRING
+    },
+    description: {
+        type: Sequelize.STRING
+    },
+    ProjectId: {
+        type: Sequelize.INTEGER
+    }
+});
+
+module.exports.Devices = this.db.define('Devices', {
     deviceType: {
         type: Sequelize.STRING
     },
@@ -59,7 +82,10 @@ module.exports.init = async () => {
 
 module.exports.seed = async () => {
     this.Projects.hasMany(this.Deadlines);
+    this.Projects.hasMany(this.Meetings);
+
     this.Deadlines.belongsTo(this.Projects);
+    this.Meetings.belongsTo(this.Projects);
 
     this.Users.belongsToMany(this.Projects, {through: 'UserProjects'});
     this.Projects.belongsToMany(this.Users, {through: 'UserProjects'});

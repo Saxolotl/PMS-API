@@ -1,4 +1,4 @@
-const { db, Users, seed } = require("./models");
+const { db, Users, Projects, Deadlines, Meetings, Devices, seed } = require("./models");
 
 const express = require("express");
 const app = express();
@@ -41,7 +41,6 @@ app.post("/register", (req, res) => {
         password: req.query.password,
     })
         .then((result) => {
-            console.log(result);
             res.status(200).send(`Successfully Registered User`);
         })
         .catch((err) => {
@@ -50,6 +49,31 @@ app.post("/register", (req, res) => {
                 `An account with that user already exists: ${err}`
             );
         });
+});
+
+app.post("/createProject", (req, res) => {
+    Projects.create({
+        name: req.query.name,
+        description: req.query.desc,
+        budget: req.query.budget
+    }).then((result) => {
+        res.status(200).send(`Successfully created Project ${result.id}: ${result.name}`);
+    }).catch((err) => {
+        res.status(500).send(err);
+    })
+});
+
+app.post("/addDeadline", (req, res) => {
+    Deadlines.create({
+        date: req.query.date,
+        name: req.query.name,
+        description: req.query.desc,
+        ProjectId: req.query.project
+    }).then((result) => {
+        res.status(200).send(`Successfully created Deadline ${result.name} for Project: ${result.ProjectId}`);
+    }).catch((err) => {
+        res.status(500).send(err);
+    })
 });
 
 app.get("/updateDB", (req, res) => {1
