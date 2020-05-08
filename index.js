@@ -1,4 +1,4 @@
-const { db, Users, Projects, Deadlines, Meetings, Devices, seed } = require("./models");
+const { db, Users, Projects, Deadlines, Meetings, Devices, UserProjects, seed } = require("./models");
 
 const express = require("express");
 const app = express();
@@ -76,7 +76,23 @@ app.post("/addDeadline", (req, res) => {
     });
 });
 
-app.post("/getDeadlinesForProject", (req, res) => {
+app.post("/removeDeadline", (req, res) => {
+    Deadlines.destroy({
+        where: {
+            id: req.query.id
+        }
+    }).then(result => {
+        if(result == 0) {
+            res.status(400).send(`Deadline ID ${req.query.id} does not exist`)
+        } else {
+            res.status(200).send(`Successfully deleted Deadline: ${req.query.id}`);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    });
+});
+
+app.get("/getDeadlinesForProject", (req, res) => {
     Deadlines.findAll({
         where: {ProjectId: req.query.projectId}
     }).then(result => {
@@ -84,7 +100,7 @@ app.post("/getDeadlinesForProject", (req, res) => {
     }).catch(err => {
         res.status(500).send(err);
     })
-})
+});
 
 app.post("/addMeeting", (req, res) => {
     Meetings.create({
@@ -99,7 +115,23 @@ app.post("/addMeeting", (req, res) => {
     });
 });
 
-app.post("/getMeetingsForProject", (req, res) => {
+app.post("/removeMeeting", (req, res) => {
+    Meetings.destroy({
+        where: {
+            id: req.query.id
+        }
+    }).then(result => {
+        if(result == 0) {
+            res.status(400).send(`Meeting ID ${req.query.id} does not exist`)
+        } else {
+            res.status(200).send(`Successfully deleted Meeting: ${req.query.id}`);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    });
+});
+
+app.get("/getMeetingsForProject", (req, res) => {
     Meetings.findAll({
         where: {ProjectId: req.query.projectId}
     }).then(result => {
@@ -107,14 +139,54 @@ app.post("/getMeetingsForProject", (req, res) => {
     }).catch(err => {
         res.status(500).send(err);
     })
-})
+});
 
+app.get("/userProjects", (req, res) => {
+    Users.findAll({
+        where: {email: req.query.email},
+        attributes: ['email'],
+        include: [{
+            model: Projects,
+            as: 'Project',
+        }]
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
 
-app.get("/updateDB", (req, res) => {1
+app.get("getProjectDevices", (req, res) => {
+    Devices.findAll({
+        where: {
+            ProjectId: req.query.projectId
+        }
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.post("/assignUserProject", (req, res) => {
+    UserProjects.create({
+        UserEmail: req.query.email,
+        ProjectId: req.query.projectId
+    }).then(result => {
+        res.status(200).send(`Assigned user ${req.query.email} to project ${req.query.projectId}`);
+    }).catch(err => {
+        res.status(500).send(err);
+    });
+});
+
+app.get("/updateDB", (req, res) => {
     seed();
     res.status(200).send(`DB successfully updated!`);
-})
+});
 
-app.listen(port, () =>
-    console.log(`API now listening at http://localhost:${port}`)
-);
+
+
+app.listen(port, () => {
+    seed();
+    console.log(`API now listening at http://localhost:${port}`);
+});
