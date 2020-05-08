@@ -156,13 +156,51 @@ app.get("/userProjects", (req, res) => {
     })
 });
 
-app.get("getProjectDevices", (req, res) => {
+app.get("/getProjectDevices", (req, res) => {
     Devices.findAll({
         where: {
             ProjectId: req.query.projectId
         }
     }).then(result => {
-        res.status(200).send(result);
+        if(result.length == 0){
+            res.status(404).send(`No Devices were found for this project`);
+        } else{
+            res.status(200).send(result);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.post("/assignDeviceProject", (req, res) => {
+    Devices.update(
+        {ProjectId: req.query.projectId},
+        {
+            where: {assetId: req.query.assetId}
+        }
+    ).then(result => {
+        if(result[0] === 0){
+            res.status(400).send(`That device doesn't exist!`);
+        } else{
+            res.status(200).send(`Device ${req.query.assetId} has been assigned to Project ${req.query.projectId}`);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.post("/deassignDeviceProject", (req, res) => {
+    Devices.update(
+        {ProjectId: null},
+        {
+            where: {assetId: req.query.assetId}
+        }
+    ).then(result => {
+        if(result[0] === 0){
+            res.status(400).send(`That device doesn't exist!`);
+        } else{
+            res.status(200).send(`Device ${req.query.assetId} has been deassigned`);
+        }
     }).catch(err => {
         res.status(500).send(err);
     })
