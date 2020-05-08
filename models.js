@@ -95,6 +95,9 @@ module.exports.Devices = this.db.define('Devices', {
     },
     description: {
         type: Sequelize.STRING
+    },
+    ProjectId: {
+        type: Sequelize.STRING
     }
 });
 
