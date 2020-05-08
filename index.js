@@ -217,6 +217,74 @@ app.post("/assignUserProject", (req, res) => {
     });
 });
 
+app.post("/createDevice", (req, res) => {
+    Devices.create({
+        serialNumber: req.query.serialNo,
+        deviceType: req.query.type,
+        description: req.query.desc,
+    }).then(result => {
+        res.status(200).send(`Created Device ${result.assetId} with serial no. ${result.serialNumber}`);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.post("/deleteDevice", (req, res) => {
+    Devices.destroy({
+        where: {
+            assetId: req.query.assetId
+        }
+    }).then(result => {
+        if(result == 0) {
+            res.status(400).send(`Device ID ${req.query.assetId} does not exist`)
+        } else {
+            res.status(200).send(`Successfully deleted Device: ${req.query.assetId}`);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.get("/getDevices", (req, res) => {
+    Devices.findAll().then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.get("/getDeviceById", (req, res) => {
+    Devices.findAll({
+        where: {
+            assetId: req.query.assetId
+        }
+    }).then(result => {
+        if(result.length == 0){
+            res.status(404).send(`No Devices Found`);
+        } else {
+            res.status(200).send(result);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
+app.get("/getDeviceBySerial", (req, res) => {
+    Devices.findAll({
+        where: {
+            serialNumber: req.query.serialNo
+        }
+    }).then(result => {
+        if(result.length == 0){
+            res.status(404).send(`No Devices Found`);
+        } else {
+            res.status(200).send(result);
+        }
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
+
 app.get("/updateDB", (req, res) => {
     seed();
     res.status(200).send(`DB successfully updated!`);
