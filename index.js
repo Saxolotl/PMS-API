@@ -180,7 +180,26 @@ app.get("/getUserDeadlines", (req, res) => {
     }).catch(err => {
         res.status(500).send(err);
     })
-})
+});
+
+app.get("/getUserMeetings", (req, res) => {
+    Meetings.findAll({
+        include: [{
+            model: Projects,
+            include: [{
+                model: Users,
+                as: 'User',
+                where: {email: req.query.email},
+                attributes: [],
+            }],
+            required: true
+        }]
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+});
 
 app.get("/getProjectDevices", (req, res) => {
     Devices.findAll({
