@@ -1,8 +1,14 @@
 const { db, Users, Projects, Deadlines, Meetings, Devices, UserProjects, seed } = require("./models");
 
 const express = require("express");
+const bodyParser = require("body-parser")
+const cors = require("cors");
+
 const app = express();
 const port = 6969;
+
+app.use(cors());
+app.use(bodyParser.json());
 
 app.get("/", (req, res) => {
     res.send(
@@ -11,14 +17,14 @@ app.get("/", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-    if(Object.keys(req.query).length === 0){
+    if(Object.keys(req.body).length === 0){
         res.sendStatus(400);
         return;
     }
     Users.findOne({
         where: {
-            email: req.query.username,
-            password: req.query.password,
+            email: req.body.email,
+            password: req.body.password,
         },
     }).then(result => {
         if (result == null) {
@@ -152,9 +158,29 @@ app.get("/userProjects", (req, res) => {
     }).then(result => {
         res.status(200).send(result);
     }).catch(err => {
+        console.log(err);
         res.status(500).send(err);
     })
 });
+
+app.get("/getUserDeadlines", (req, res) => {
+    Deadlines.findAll({
+        include: [{
+            model: Projects,
+            include: [{
+                model: Users,
+                as: 'User',
+                where: {email: req.query.email},
+                attributes: [],
+            }],
+            required: true
+        }]
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+})
 
 app.get("/getProjectDevices", (req, res) => {
     Devices.findAll({
