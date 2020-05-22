@@ -7,8 +7,14 @@ const cors = require("cors");
 const app = express();
 const port = 6969;
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
+
+
+var corsOptions = {
+    origin: 'http://localhost:3000'
+}
+
 
 app.get("/", (req, res) => {
     res.send(
@@ -70,16 +76,34 @@ app.post("/createProject", (req, res) => {
 });
 
 app.post("/addDeadline", (req, res) => {
-    Deadlines.create({
-        date: req.query.date,
-        name: req.query.name,
-        description: req.query.desc,
-        ProjectId: req.query.project
-    }).then((result) => {
-        res.status(200).send(`Successfully created Deadline ${result.name} for Project: ${result.ProjectId}`);
-    }).catch(err => {
-        res.status(500).send(err);
-    });
+    if(Object.keys(req.body).length !== 4) {
+        res.status(400).send(`ServerError: Incorrect number of arguments`);
+    } else {
+        Deadlines.create({
+            date: req.body.date,
+            name: req.body.title,
+            description: req.body.description,
+            ProjectId: req.body.projectId
+        }).then(result => {
+            Deadlines.findOne({
+                where: {
+                    id: result.id
+                },
+                include: [{
+                    model: Projects
+                }]
+            }).then(result => {
+                res.status(200).send({
+                    message: `Successfully created ${result.name} for ${result.Project.name}`,
+                    error: false,
+                    deadlineId: result.id
+                });
+            });
+        }).catch(err => {
+            res.status(500).send(err);
+            console.error(err);
+        });
+    }
 });
 
 app.post("/removeDeadline", (req, res) => {
@@ -109,33 +133,93 @@ app.get("/getDeadlinesForProject", (req, res) => {
 });
 
 app.post("/addMeeting", (req, res) => {
-    Meetings.create({
-        date: req.query.date,
-        name: req.query.name,
-        description: req.query.desc,
-        ProjectId: req.query.project
-    }).then(result => {
-        res.status(200).send(`Successfully created Meeting ${result.name} for Project: ${result.ProjectId}`);
-    }).catch(err => {
-        res.status(500).send(err);
-    });
+    if(Object.keys(req.body).length !== 4) {
+        res.status(400).send(`ServerError: Incorrect number of arguments`);
+    } else {
+        Meetings.create({
+            date: req.body.date,
+            name: req.body.title,
+            description: req.body.description,
+            ProjectId: req.body.projectId
+        }).then(result => {
+            Meetings.findOne({
+                where: {
+                    id: result.id
+                },
+                include: [{
+                    model: Projects
+                }]
+            }).then(result => {
+                res.status(200).send({
+                    message: `Successfully created ${result.name} for ${result.Project.name}`,
+                    error: false,
+                    meetingId: result.id
+                });
+            });
+        }).catch(err => {
+            res.status(500).send(err);
+            console.error(err);
+        });
+    }
 });
 
-app.post("/removeMeeting", (req, res) => {
+app.get("/removeMeeting", (req, res) => {
     Meetings.destroy({
         where: {
             id: req.query.id
         }
     }).then(result => {
+        console.log(result);
         if(result == 0) {
-            res.status(400).send(`Meeting ID ${req.query.id} does not exist`)
+            res.status(400).send({
+                message: `Unable to Delete`,
+                error: true
+            })
         } else {
-            res.status(200).send(`Successfully deleted Meeting: ${req.query.id}`);
+            res.status(200).send({
+                message: `Successfully Deleted`,
+                error: false
+            });
         }
     }).catch(err => {
-        res.status(500).send(err);
+        res.status(500).send({
+            message: err.message,
+            error: true,
+        });
     });
 });
+
+app.post("/editMeeting", (req, res) => {
+    Meetings.update({
+        date: req.body.date,
+        name: req.body.title,
+        description: req.body.description,
+    }, {
+        where: {
+            id: req.body.id
+        }
+    }).then(result => {
+        if(result == 0) {
+            res.status(500).send({
+                message: `Could not update meeting`,
+                error: true,
+                meetingId: result.id
+            });
+        } else {
+            res.status(200).send({
+                message: `Successfully updated ${req.body.title}`,
+                error: false,
+                meetingId: result.id
+            });
+        }
+    }).catch(err => {
+        res.status(500).send({
+            message: err.message,
+            error: true,
+            meetingId: req.body.id
+        });
+    })
+})
 
 app.get("/getMeetingsForProject", (req, res) => {
     Meetings.findAll({
@@ -158,10 +242,19 @@ app.get("/userProjects", (req, res) => {
     }).then(result => {
         res.status(200).send(result);
     }).catch(err => {
-        console.log(err);
         res.status(500).send(err);
     })
 });
+
+app.get("/getProject", (req, res) => {
+    Projects.findOne({
+        where: {id: req.query.id}
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+})
 
 app.get("/getUserDeadlines", (req, res) => {
     Deadlines.findAll({
@@ -261,6 +354,23 @@ app.post("/assignUserProject", (req, res) => {
         res.status(500).send(err);
     });
 });
+
+app.get("/getProjectUsers", (req, res) => {
+    Projects.findOne({
+        where: {
+            id: req.query.projectId
+        },
+        attributes: [],
+        include: [{
+            model: Users,
+            as: "User"
+        }]
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+})
 
 app.post("/createDevice", (req, res) => {
     Devices.create({
