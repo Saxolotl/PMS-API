@@ -1,7 +1,11 @@
-const { db, Users, Projects, Deadlines, Meetings, Devices, UserProjects, seed } = require("./models");
+const { db, Users, Projects, Deadlines, Meetings, Devices, UserProjects, Invoices, seed } = require("./models");
 
 const express = require("express");
-const bodyParser = require("body-parser")
+const bodyParser = require("body-parser");
+const multer = require("multer");
+
+var upload = multer({ dest: 'invoices/'});
+
 const cors = require("cors");
 
 const app = express();
@@ -94,7 +98,7 @@ app.post("/addDeadline", (req, res) => {
                 }]
             }).then(result => {
                 res.status(200).send({
-                    message: `Successfully created ${result.name} for ${result.Project.name}`,
+                    message: `Successfully Created ${result.name} for ${result.Project.name}`,
                     error: false,
                     deadlineId: result.id
                 });
@@ -106,19 +110,61 @@ app.post("/addDeadline", (req, res) => {
     }
 });
 
-app.post("/removeDeadline", (req, res) => {
+app.post("/editDeadline", (req, res) => {
+    Deadlines.update({
+        date: req.body.date,
+        name: req.body.title,
+        description: req.body.description,
+    }, {
+        where: {
+            id: req.body.id
+        }
+    }).then(result => {
+        if(result == 0) {
+            res.status(500).send({
+                message: `Could not update meeting`,
+                error: true,
+                deadlineId: result.id
+            });
+        } else {
+            res.status(200).send({
+                message: `Successfully updated ${req.body.title}`,
+                error: false,
+                deadlineId: result.id
+            });
+        }
+    }).catch(err => {
+        res.status(500).send({
+            message: err.message,
+            error: true,
+            deadlineId: req.body.id
+        });
+    });
+})
+
+app.get("/removeDeadline", (req, res) => {
     Deadlines.destroy({
         where: {
             id: req.query.id
         }
     }).then(result => {
+        console.log(result);
         if(result == 0) {
-            res.status(400).send(`Deadline ID ${req.query.id} does not exist`)
+            res.status(400).send({
+                message: `Unable to Delete`,
+                error: true
+            })
         } else {
-            res.status(200).send(`Successfully deleted Deadline: ${req.query.id}`);
+            res.status(200).send({
+                message: `Successfully Deleted`,
+                error: false
+            });
         }
     }).catch(err => {
-        res.status(500).send(err);
+        res.status(500).send({
+            message: err.message,
+            error: true,
+        });
     });
 });
 
@@ -151,7 +197,7 @@ app.post("/addMeeting", (req, res) => {
                 }]
             }).then(result => {
                 res.status(200).send({
-                    message: `Successfully created ${result.name} for ${result.Project.name}`,
+                    message: `Successfully Created ${result.name} for ${result.Project.name}`,
                     error: false,
                     meetingId: result.id
                 });
@@ -218,7 +264,7 @@ app.post("/editMeeting", (req, res) => {
             error: true,
             meetingId: req.body.id
         });
-    })
+    });
 })
 
 app.get("/getMeetingsForProject", (req, res) => {
@@ -439,6 +485,61 @@ app.get("/getDeviceBySerial", (req, res) => {
         res.status(500).send(err);
     })
 });
+
+app.get("/getInvoicesForProject", (req, res) => {
+    Invoices.findAll({
+        where: {
+            ProjectId: req.query.projectId
+        }
+    }).then(result => {
+        res.status(200).send(result);
+    }).catch(err => {
+        res.status(500).send(err);
+    })
+})
+
+app.post("/addInvoice", upload.single('invoice'), (req, res) => {
+    console.log(req.file);
+    console.log(req.file.path);
+
+    Invoices.create({
+        name: req.body.title,
+        cost: req.body.cost,
+        date: req.body.date,
+        origFileName: req.file.originalname,
+        storedFileName: req.file.filename,
+        ProjectId: req.body.projectId
+    }).then(result => {
+        Invoices.findOne({
+            where: {
+                id: result.id
+            },
+            include: [{
+                model: Projects
+            }]
+        }).then(result => {
+            res.status(200).send({
+                message: `Successfully Uploaded ${result.origFileName} for ${result.Project.name}`,
+                error: false,
+                invoiceId: result.id,
+                storedFileName: result.storedFileName
+            });
+        });
+    }).catch(err => {
+        res.status(500).send(err);
+        console.error(err);
+    });
+});
+
+app.get("/getInvoiceFile/:id", (req, res) => {
+    Invoices.findOne({
+        where: {
+            id: req.params.id
+        }
+    }).then(result => {
+        res.download(`invoices\\${result.storedFileName}`, result.origFileName);
+    })
+})
 
 app.get("/updateDB", (req, res) => {
     seed();

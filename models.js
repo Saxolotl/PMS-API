@@ -41,6 +41,24 @@ this.Projects.associate = function(models) {
     this.Projects.belongsToMany(models.Users, {through: 'UserProjects', as: 'Project'});
 }
 
+module.exports.Invoices = this.db.define('Invoices', {
+    name: {
+        type: Sequelize.STRING
+    },
+    cost: {
+        type: Sequelize.FLOAT
+    },
+    date: {
+        type: Sequelize.DATE
+    },
+    origFileName: {
+        type: Sequelize.STRING
+    },
+    storedFileName: {
+        type: Sequelize.STRING
+    }
+});
+
 module.exports.UserProjects = this.db.define('UserProjects', {
     UserEmail: {
         type: Sequelize.STRING,
@@ -100,12 +118,13 @@ module.exports.Devices = this.db.define('Devices', {
         type: Sequelize.STRING
     }
 });
-
 module.exports.seed = async () => {
     this.Projects.hasMany(this.Deadlines);
     this.Projects.hasMany(this.Meetings);
     this.Projects.hasMany(this.Devices);
+    this.Projects.hasMany(this.Invoices);
 
+    this.Invoices.belongsTo(this.Projects)
     this.Deadlines.belongsTo(this.Projects);
     this.Meetings.belongsTo(this.Projects);
     this.Devices.belongsTo(this.Projects);
